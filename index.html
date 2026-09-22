@@ -1,0 +1,2340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0b0e1a">
+  <meta name="description" content="Offline Islamic Prayer Times with Adhan notifications">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Nur Prayer">
+  <title>☪ Nur · Prayer Times</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;600;800;900&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep: #0b0e1a;
+      --bg-mid: #141b2b;
+      --gold: #e6b84c;
+      --gold-glow: #ffd966;
+      --gold-dim: #b38b3a;
+      --emerald: #1f7a5c;
+      --emerald-glow: #2ecc71;
+      --text-light: #f5eedc;
+      --text-muted: #a9b7d4;
+      --ring-track: rgba(255, 215, 120, 0.10);
+      --prayer-fajr: #4a7fb5;
+      --prayer-sunrise: #d4a03c;
+      --prayer-dhuhr: #e6b84c;
+      --prayer-asr: #c97b2e;
+      --prayer-maghrib: #c44f3a;
+      --prayer-isha: #6b4e9e;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: #0a0c14;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text-light);
+      overflow-x: hidden;
+    }
+
+    body {
+      padding: 10px 10px 40px;
+      background-image:
+        radial-gradient(1200px 800px at 50% -20%, rgba(230, 184, 76, 0.07), transparent 70%),
+        radial-gradient(1000px 600px at 110% 110%, rgba(31, 122, 92, 0.10), transparent 70%),
+        radial-gradient(800px 500px at -10% 100%, rgba(107, 78, 158, 0.08), transparent 70%);
+      background-attachment: fixed;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.06;
+      background-image:
+        radial-gradient(circle at 20% 30%, #e6b84c 1px, transparent 1px),
+        radial-gradient(circle at 80% 70%, #e6b84c 1px, transparent 1px),
+        radial-gradient(circle at 50% 50%, #e6b84c 0.6px, transparent 0.6px);
+      background-size: 60px 60px, 80px 80px, 40px 40px;
+      background-position: 0 0, 20px 20px, 10px 10px;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.04;
+      background-image:
+        repeating-linear-gradient(45deg, #e6b84c 0px, #e6b84c 1px, transparent 1px, transparent 30px),
+        repeating-linear-gradient(-45deg, #e6b84c 0px, #e6b84c 1px, transparent 1px, transparent 30px);
+    }
+
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .bismillah {
+      text-align: center;
+      font-family: 'Amiri', serif;
+      font-size: 1.7rem;
+      color: #ffd966;
+      text-shadow: 0 0 12px rgba(255, 200, 60, 0.5), 0 0 30px rgba(230, 184, 76, 0.3);
+      letter-spacing: 0.03em;
+      line-height: 1.5;
+      margin-bottom: 2px;
+    }
+
+    .dates {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .dates .hijri {
+      font-family: 'Amiri', serif;
+      font-size: 1.1rem;
+      color: #e6b84c;
+      text-shadow: 0 0 10px rgba(230, 184, 76, 0.4);
+    }
+
+    .selectors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 18px;
+      background: rgba(15, 20, 35, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(230, 184, 76, 0.18);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(230, 184, 76, 0.03);
+    }
+    .selectors .full { grid-column: 1 / -1; }
+
+    .field-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 4px;
+      display: block;
+      font-weight: 600;
+    }
+
+    select {
+      width: 100%;
+      padding: 9px 12px;
+      background: #0f1420;
+      color: var(--text-light);
+      border: 1px solid rgba(230, 184, 76, 0.25);
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      outline: none;
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #e6b84c 50%),
+        linear-gradient(135deg, #e6b84c 50%, transparent 50%);
+      background-position:
+        calc(100% - 16px) calc(50% - 2px),
+        calc(100% - 10px) calc(50% - 2px);
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    select:focus {
+      border-color: #e6b84c;
+      box-shadow: 0 0 0 2px rgba(230, 184, 76, 0.2);
+    }
+
+    .rings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .ring-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 4px 8px;
+      border-radius: 18px;
+      background: rgba(15, 20, 35, 0.55);
+      border: 1px solid rgba(230, 184, 76, 0.12);
+      backdrop-filter: blur(4px);
+      transition: border-color .3s, box-shadow .3s, transform .3s;
+      overflow: hidden;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .ring-card:active {
+      transform: scale(0.96);
+    }
+
+    .ring-card.active {
+      border-color: rgba(255, 215, 120, 0.7);
+      box-shadow:
+        0 0 20px rgba(255, 215, 120, 0.25),
+        0 0 50px rgba(230, 184, 76, 0.15),
+        inset 0 0 30px rgba(255, 215, 120, 0.06);
+      animation: activeGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes activeGlow {
+      0%, 100% {
+        box-shadow:
+          0 0 18px rgba(255, 215, 120, 0.25),
+          0 0 40px rgba(230, 184, 76, 0.12),
+          inset 0 0 25px rgba(255, 215, 120, 0.05);
+      }
+      50% {
+        box-shadow:
+          0 0 30px rgba(255, 215, 120, 0.45),
+          0 0 70px rgba(230, 184, 76, 0.25),
+          inset 0 0 40px rgba(255, 215, 120, 0.1);
+      }
+    }
+
+    .ring-svg {
+      width: 100%;
+      max-width: 92px;
+      height: auto;
+      display: block;
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: var(--ring-track);
+      stroke-width: 7;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke-width: 7;
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1), stroke .4s;
+      filter: drop-shadow(0 0 4px currentColor);
+    }
+
+    .ring-card[data-prayer="fajr"] .ring-progress { stroke: var(--prayer-fajr); color: var(--prayer-fajr); }
+    .ring-card[data-prayer="sunrise"] .ring-progress { stroke: var(--prayer-sunrise); color: var(--prayer-sunrise); }
+    .ring-card[data-prayer="dhuhr"] .ring-progress { stroke: var(--prayer-dhuhr); color: var(--prayer-dhuhr); }
+    .ring-card[data-prayer="asr"] .ring-progress { stroke: var(--prayer-asr); color: var(--prayer-asr); }
+    .ring-card[data-prayer="maghrib"] .ring-progress { stroke: var(--prayer-maghrib); color: var(--prayer-maghrib); }
+    .ring-card[data-prayer="isha"] .ring-progress { stroke: var(--prayer-isha); color: var(--prayer-isha); }
+
+    .ring-card.active .ring-progress {
+      stroke: #ffe18c;
+      color: #ffe18c;
+      filter: drop-shadow(0 0 8px #ffe18c) drop-shadow(0 0 16px rgba(255, 215, 120, 0.6));
+    }
+
+    .ring-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.3rem;
+      pointer-events: none;
+      text-shadow: 0 0 8px rgba(230, 184, 76, 0.5);
+    }
+
+    .ring-name {
+      font-family: 'Amiri', serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 4px;
+      color: #e9dbb8;
+      letter-spacing: 0.03em;
+    }
+
+    .ring-time {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #d4c9a8;
+      font-variant-numeric: tabular-nums;
+      margin-top: 1px;
+    }
+
+    .ring-card.active .ring-name,
+    .ring-card.active .ring-time {
+      color: #ffe18c;
+      text-shadow: 0 0 8px rgba(255, 215, 120, 0.6);
+    }
+
+    .ring-count {
+      font-size: 0.58rem;
+      color: #8b9bb8;
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .ring-card.active .ring-count {
+      color: #ffd966;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: rgba(15, 20, 35, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(230, 184, 76, 0.15);
+      margin-bottom: 16px;
+      gap: 10px;
+    }
+    .status-item {
+      text-align: center;
+      flex: 1;
+    }
+    .status-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .status-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #ffe18c;
+      text-shadow: 0 0 10px rgba(255, 215, 120, 0.4);
+    }
+    .status-value.small {
+      font-size: 0.95rem;
+    }
+    .status-divider {
+      width: 1px;
+      height: 30px;
+      background: linear-gradient(180deg, transparent, rgba(230, 184, 76, 0.3), transparent);
+    }
+
+    .toggle-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+    .toggle-btn {
+      flex: 1;
+      max-width: 180px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(230, 184, 76, 0.25);
+      background: rgba(15, 20, 35, 0.7);
+      color: #e9dbb8;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .25s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      backdrop-filter: blur(4px);
+    }
+    .toggle-btn:hover,
+    .toggle-btn.active {
+      background: rgba(230, 184, 76, 0.15);
+      border-color: #e6b84c;
+      color: #ffe18c;
+      box-shadow: 0 0 18px rgba(230, 184, 76, 0.15);
+    }
+    .toggle-btn .icon {
+      font-size: 1rem;
+    }
+
+    .table-wrap {
+      border-radius: 14px;
+      border: 1px solid rgba(230, 184, 76, 0.15);
+      background: rgba(12, 16, 28, 0.75);
+      backdrop-filter: blur(6px);
+      overflow: hidden;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .table-wrap.visible {
+      display: block;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    th, td {
+      padding: 8px 6px;
+      text-align: left;
+      border-bottom: 1px solid rgba(230, 184, 76, 0.06);
+    }
+    th {
+      color: var(--gold-dim);
+      font-weight: 600;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: rgba(230, 184, 76, 0.04);
+    }
+    td.time {
+      text-align: right;
+      font-weight: 600;
+      color: #e9dbb8;
+    }
+    td.name {
+      color: #c9d4e8;
+    }
+    tr.today-row td {
+      background: rgba(230, 184, 76, 0.06);
+    }
+    tr.today-row td.name {
+      color: #ffe18c;
+      font-weight: 700;
+    }
+    tr td.active-prayer {
+      color: #ffe18c;
+      text-shadow: 0 0 8px rgba(255, 215, 120, 0.5);
+      font-weight: 700;
+    }
+
+    .table-title {
+      padding: 10px 14px;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      font-weight: 600;
+      border-bottom: 1px solid rgba(230, 184, 76, 0.1);
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.65rem;
+      color: #6b7a96;
+      letter-spacing: 0.1em;
+      margin-top: 24px;
+      font-family: 'Amiri', serif;
+    }
+
+    /* Adhan banner */
+    .adhan-banner {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-140%);
+      background: linear-gradient(135deg, rgba(230, 184, 76, 0.95), rgba(180, 130, 40, 0.95));
+      color: #0a0c14;
+      padding: 14px 26px;
+      border-radius: 16px;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      box-shadow: 0 12px 40px rgba(230, 184, 76, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+      z-index: 9999;
+      transition: transform .6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 90vw;
+      text-align: center;
+      pointer-events: none;
+      font-family: 'Amiri', 'Inter', serif;
+    }
+    .adhan-banner.show {
+      transform: translateX(-50%) translateY(0);
+    }
+    .adhan-banner .adhan-icon {
+      font-size: 1.4rem;
+      animation: adhanPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes adhanPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    /* Install PWA button */
+    .install-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #e6b84c, #c97b2e);
+      color: #0a0c14;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 50px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      font-family: inherit;
+      letter-spacing: 0.03em;
+      box-shadow: 0 8px 30px rgba(230, 184, 76, 0.45);
+      cursor: pointer;
+      z-index: 9998;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      transition: transform .2s, box-shadow .2s;
+      animation: installPulse 2.5s ease-in-out infinite;
+    }
+    .install-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(230, 184, 76, 0.6);
+    }
+    .install-btn.show { display: flex; }
+    @keyframes installPulse {
+      0%, 100% { box-shadow: 0 8px 30px rgba(230, 184, 76, 0.45); }
+      50% { box-shadow: 0 8px 40px rgba(230, 184, 76, 0.75); }
+    }
+
+    .notif-banner {
+      display: none;
+      background: rgba(15, 20, 35, 0.9);
+      border: 1px solid rgba(230, 184, 76, 0.3);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.75rem;
+      color: #d4c9a8;
+    }
+    .notif-banner.show { display: flex; }
+    .notif-banner button {
+      background: rgba(230, 184, 76, 0.2);
+      border: 1px solid #e6b84c;
+      color: #ffe18c;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+    .notif-banner button:hover {
+      background: rgba(230, 184, 76, 0.35);
+    }
+
+    /* =========================================================
+       FULLSCREEN PRAYER DETAIL — astonishing Islamic style
+       ========================================================= */
+    .prayer-fullscreen {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity .55s cubic-bezier(0.4, 0, 0.2, 1), visibility .55s;
+      overflow: hidden;
+      padding: 20px;
+    }
+    .prayer-fullscreen.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    /* Layered backgrounds — deep cosmic Islamic night */
+    .fs-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(1200px 900px at 50% 30%, rgba(30, 20, 60, 0.95), transparent 70%),
+        radial-gradient(900px 700px at 20% 80%, rgba(31, 122, 92, 0.35), transparent 65%),
+        radial-gradient(1000px 800px at 85% 15%, rgba(107, 78, 158, 0.35), transparent 65%),
+        linear-gradient(160deg, #060814 0%, #0a0e1e 40%, #0d1328 100%);
+    }
+
+    /* Animated star field */
+    .fs-stars {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.7;
+      background-image:
+        radial-gradient(1.6px 1.6px at 12% 22%, #fff8d6, transparent),
+        radial-gradient(1.4px 1.4px at 78% 14%, #ffe9a8, transparent),
+        radial-gradient(1.8px 1.8px at 34% 68%, #fffbe8, transparent),
+        radial-gradient(1.2px 1.2px at 62% 82%, #ffd966, transparent),
+        radial-gradient(1.5px 1.5px at 88% 52%, #fff8d6, transparent),
+        radial-gradient(1.3px 1.3px at 22% 88%, #ffe9a8, transparent),
+        radial-gradient(1.7px 1.7px at 52% 32%, #ffffff, transparent),
+        radial-gradient(1.2px 1.2px at 8% 62%, #ffd966, transparent),
+        radial-gradient(1.4px 1.4px at 94% 78%, #fffbe8, transparent),
+        radial-gradient(1.5px 1.5px at 44% 8%, #fff8d6, transparent);
+      animation: starTwinkle 5s ease-in-out infinite;
+    }
+    @keyframes starTwinkle {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 0.9; }
+    }
+
+    /* Geometric Islamic pattern overlay */
+    .fs-pattern {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0.10;
+      background-image:
+        repeating-conic-gradient(from 0deg at 50% 50%,
+          transparent 0deg 15deg, #e6b84c 15deg 16deg,
+          transparent 16deg 30deg, #e6b84c 30deg 31deg);
+      background-size: 220px 220px;
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 20%, transparent 75%);
+      mask-image: radial-gradient(circle at 50% 50%, #000 20%, transparent 75%);
+      animation: patternRotate 60s linear infinite;
+    }
+    @keyframes patternRotate {
+      from { transform: rotate(0deg) scale(1.4); }
+      to   { transform: rotate(360deg) scale(1.4); }
+    }
+
+    /* Big glowing halo behind the ring */
+    .fs-halo {
+      position: absolute;
+      width: 130vmin;
+      height: 130vmin;
+      border-radius: 50%;
+      z-index: 3;
+      pointer-events: none;
+      background: radial-gradient(circle at center,
+        rgba(255, 215, 120, 0.18) 0%,
+        rgba(255, 180, 60, 0.08) 25%,
+        transparent 60%);
+      animation: haloPulse 4s ease-in-out infinite;
+    }
+    @keyframes haloPulse {
+      0%, 100% { transform: scale(0.92); opacity: 0.7; }
+      50%      { transform: scale(1.05); opacity: 1; }
+    }
+
+    /* Close button */
+    .fs-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 20;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(15, 20, 35, 0.7);
+      border: 1px solid rgba(230, 184, 76, 0.5);
+      color: #ffd966;
+      font-size: 1.5rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 20px rgba(230, 184, 76, 0.25);
+      transition: transform .25s, background .25s, box-shadow .25s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .fs-close:hover {
+      transform: rotate(90deg) scale(1.1);
+      background: rgba(230, 184, 76, 0.2);
+      box-shadow: 0 0 30px rgba(230, 184, 76, 0.5);
+    }
+
+    /* Content wrapper */
+    .fs-content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 100%;
+      max-width: 520px;
+      transform: translateY(24px) scale(0.94);
+      opacity: 0;
+      transition: transform .65s cubic-bezier(0.34, 1.3, 0.64, 1) .12s, opacity .5s .12s;
+    }
+    .prayer-fullscreen.open .fs-content {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    /* Arabic ornamental top */
+    .fs-arabic {
+      font-family: 'Scheherazade New', 'Amiri', serif;
+      font-size: clamp(2.2rem, 9vw, 3.4rem);
+      font-weight: 700;
+      color: #ffd966;
+      line-height: 1.25;
+      text-shadow:
+        0 0 10px rgba(255, 215, 120, 0.9),
+        0 0 28px rgba(255, 180, 60, 0.7),
+        0 0 60px rgba(255, 140, 20, 0.5);
+      margin-bottom: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Ornamental divider */
+    .fs-ornament {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 8px 0 18px;
+      color: #e6b84c;
+      font-size: 0.8rem;
+      opacity: 0.85;
+    }
+    .fs-ornament .line {
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #e6b84c, transparent);
+    }
+    .fs-ornament .diamond {
+      width: 7px;
+      height: 7px;
+      transform: rotate(45deg);
+      background: linear-gradient(135deg, #ffd966, #c97b2e);
+      box-shadow: 0 0 10px rgba(255, 215, 120, 0.8);
+    }
+
+    /* The big ring */
+    .fs-ring-wrap {
+      position: relative;
+      width: min(76vw, 340px);
+      height: min(76vw, 340px);
+      margin: 6px 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Decorative rotating outer ring */
+    .fs-ring-deco {
+      position: absolute;
+      inset: -18px;
+      border-radius: 50%;
+      border: 1px dashed rgba(230, 184, 76, 0.35);
+      animation: decoRotate 40s linear infinite;
+    }
+    .fs-ring-deco::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(230, 184, 76, 0.18);
+    }
+    .fs-ring-deco::after {
+      content: "✦";
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ffd966;
+      font-size: 0.9rem;
+      text-shadow: 0 0 10px #ffd966;
+    }
+    @keyframes decoRotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .fs-ring-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 20px rgba(255, 200, 80, 0.4));
+    }
+
+    .fs-ring-track {
+      fill: none;
+      stroke: rgba(255, 215, 120, 0.10);
+      stroke-width: 9;
+    }
+
+    .fs-ring-progress {
+      fill: none;
+      stroke: #ffe18c;
+      stroke-width: 9;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: drop-shadow(0 0 10px #ffe18c) drop-shadow(0 0 24px rgba(255, 180, 60, 0.7));
+    }
+
+    /* Center content inside the ring */
+    .fs-ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .fs-ring-icon {
+      font-size: clamp(2.4rem, 9vw, 3.6rem);
+      margin-bottom: 2px;
+      filter: drop-shadow(0 0 14px rgba(255, 215, 120, 0.8));
+      animation: iconFloat 3.5s ease-in-out infinite;
+    }
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
+    }
+
+    .fs-ring-label {
+      font-family: 'Amiri', serif;
+      font-size: clamp(1rem, 4vw, 1.3rem);
+      font-weight: 700;
+      color: #f5eedc;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(230, 184, 76, 0.5);
+    }
+
+    .fs-ring-time {
+      font-size: clamp(2rem, 10vw, 2.9rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      color: #ffe18c;
+      letter-spacing: 0.02em;
+      text-shadow:
+        0 0 12px #ffd966,
+        0 0 32px rgba(255, 180, 60, 0.8),
+        0 0 60px rgba(255, 120, 20, 0.5);
+      line-height: 1.05;
+      margin-top: 2px;
+    }
+
+    /* Info cards below */
+    .fs-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .fs-info-card {
+      background: rgba(15, 20, 35, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(230, 184, 76, 0.28);
+      border-radius: 16px;
+      padding: 12px 10px;
+      box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.5),
+        inset 0 0 30px rgba(230, 184, 76, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+    .fs-info-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 215, 120, 0.6), transparent);
+    }
+
+    .fs-info-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .fs-info-value {
+      font-size: clamp(0.95rem, 4vw, 1.2rem);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #ffe18c;
+      text-shadow: 0 0 10px rgba(255, 215, 120, 0.45);
+      line-height: 1.2;
+    }
+
+    .fs-info-value.muted {
+      color: #c9d4e8;
+      text-shadow: none;
+      font-weight: 700;
+      font-size: clamp(0.85rem, 3.6vw, 1rem);
+    }
+
+    /* Countdown highlight card (full width) */
+    .fs-countdown-card {
+      grid-column: 1 / -1;
+      background:
+        radial-gradient(400px 120px at 50% 0%, rgba(255, 180, 60, 0.18), transparent 70%),
+        rgba(15, 20, 35, 0.75);
+      border: 1px solid rgba(255, 215, 120, 0.45);
+      box-shadow:
+        0 8px 30px rgba(255, 180, 60, 0.15),
+        inset 0 0 40px rgba(255, 180, 60, 0.05);
+      animation: countdownGlow 2.4s ease-in-out infinite;
+    }
+    @keyframes countdownGlow {
+      0%, 100% { box-shadow: 0 8px 30px rgba(255, 180, 60, 0.12), inset 0 0 40px rgba(255, 180, 60, 0.04); }
+      50%      { box-shadow: 0 8px 40px rgba(255, 180, 60, 0.3), inset 0 0 50px rgba(255, 180, 60, 0.08); }
+    }
+
+    .fs-countdown-value {
+      font-size: clamp(1.5rem, 7vw, 2.1rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      color: #fff8e0;
+      text-shadow:
+        0 0 12px #ffd966,
+        0 0 32px rgba(255, 180, 60, 0.8),
+        0 0 60px rgba(255, 120, 20, 0.5);
+      letter-spacing: 0.03em;
+      line-height: 1.1;
+    }
+
+    /* Bottom Arabic blessing */
+    .fs-blessing {
+      margin-top: 20px;
+      font-family: 'Amiri', serif;
+      font-size: clamp(0.95rem, 4vw, 1.15rem);
+      color: #e6b84c;
+      text-shadow: 0 0 12px rgba(230, 184, 76, 0.55);
+      letter-spacing: 0.03em;
+      opacity: 0.9;
+    }
+
+    /* Floating particles */
+    .fs-particle {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffd966, transparent 70%);
+      pointer-events: none;
+      z-index: 4;
+      opacity: 0;
+      animation: particleFloat 7s ease-in-out infinite;
+    }
+    @keyframes particleFloat {
+      0%   { opacity: 0; transform: translateY(20px) scale(0.6); }
+      20%  { opacity: 0.8; }
+      80%  { opacity: 0.6; }
+      100% { opacity: 0; transform: translateY(-100px) scale(1.1); }
+    }
+
+    @media (max-width: 420px) {
+      .bismillah { font-size: 1.4rem; }
+      .ring-name { font-size: 0.75rem; }
+      .ring-time { font-size: 0.65rem; }
+      .ring-icon { font-size: 1.1rem; }
+      .ring-svg { max-width: 78px; }
+      .status-value { font-size: 1rem; }
+      .selectors { gap: 6px; padding: 10px; }
+      .install-btn { padding: 10px 16px; font-size: 0.78rem; }
+      .fs-info { gap: 8px; }
+      .fs-info-card { padding: 10px 8px; }
+      .fs-close { width: 40px; height: 40px; font-size: 1.3rem; top: 14px; right: 14px; }
+    }
+    @media (max-width: 340px) {
+      .ring-svg { max-width: 68px; }
+      .ring-name { font-size: 0.68rem; }
+      .ring-icon { font-size: 0.95rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ring-card.active { animation: none; }
+      .ring-progress { transition: none; }
+      .adhan-banner .adhan-icon { animation: none; }
+      .install-btn { animation: none; }
+      .fs-pattern, .fs-halo, .fs-ring-deco, .fs-ring-icon,
+      .fs-stars, .fs-particle, .fs-countdown-card { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Adhan banner -->
+<div class="adhan-banner" id="adhanBanner">
+  <span class="adhan-icon">🕌</span>
+  <span id="adhanText">Time for Prayer</span>
+</div>
+
+<!-- Install PWA button -->
+<button class="install-btn" id="installBtn">
+  <span>📲</span> Install App
+</button>
+
+<!-- =========================================================
+     FULLSCREEN PRAYER DETAIL
+     ========================================================= -->
+<div class="prayer-fullscreen" id="prayerFullscreen" role="dialog" aria-modal="true" aria-label="Prayer details">
+  <div class="fs-bg"></div>
+  <div class="fs-stars"></div>
+  <div class="fs-pattern"></div>
+  <div class="fs-halo"></div>
+  <div class="fs-particles" id="fsParticles"></div>
+
+  <button class="fs-close" id="fsClose" aria-label="Close">✕</button>
+
+  <div class="fs-content" id="fsContent">
+    <!-- Arabic prayer name -->
+    <div class="fs-arabic" id="fsArabic">الفجر</div>
+
+    <!-- Ornamental divider -->
+    <div class="fs-ornament">
+      <span class="line"></span>
+      <span class="diamond"></span>
+      <span class="line"></span>
+    </div>
+
+    <!-- Big ring -->
+    <div class="fs-ring-wrap">
+      <div class="fs-ring-deco"></div>
+      <svg class="fs-ring-svg" viewBox="0 0 200 200" id="fsRingSvg">
+        <circle class="fs-ring-track" cx="100" cy="100" r="82" />
+        <circle class="fs-ring-progress" id="fsRingProgress" cx="100" cy="100" r="82"
+                stroke-dasharray="515.22" stroke-dashoffset="515.22" />
+      </svg>
+      <div class="fs-ring-center">
+        <div class="fs-ring-icon" id="fsIcon">🌙</div>
+        <div class="fs-ring-label" id="fsLabel">Fajr</div>
+        <div class="fs-ring-time" id="fsTime">--:--</div>
+      </div>
+    </div>
+
+    <!-- Info cards -->
+    <div class="fs-info">
+      <div class="fs-info-card">
+        <div class="fs-info-label">Current Time</div>
+        <div class="fs-info-value" id="fsCurrentTime">--:--:--</div>
+      </div>
+      <div class="fs-info-card">
+        <div class="fs-info-label">Status</div>
+        <div class="fs-info-value muted" id="fsStatus">Upcoming</div>
+      </div>
+      <div class="fs-info-card fs-countdown-card">
+        <div class="fs-info-label" id="fsCountdownLabel">Time Remaining</div>
+        <div class="fs-countdown-value" id="fsCountdown">--:--:--</div>
+      </div>
+    </div>
+
+    <!-- Blessing -->
+    <div class="fs-blessing" id="fsBlessing">حَيَّ عَلَى الصَّلَاة</div>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
+
+  <div class="dates">
+    <span class="hijri" id="hijri">—</span>
+    <span id="gregorian">—</span>
+  </div>
+
+  <div class="notif-banner" id="notifBanner">
+    <span>🔔 Enable Adhan notifications?</span>
+    <button id="enableNotifBtn">Enable</button>
+  </div>
+
+  <div class="selectors">
+    <div>
+      <label class="field-label" for="country">Country</label>
+      <select id="country"></select>
+    </div>
+    <div>
+      <label class="field-label" for="city">City</label>
+      <select id="city"></select>
+    </div>
+    <div class="full">
+      <label class="field-label" for="method">Calculation Method</label>
+      <select id="method">
+        <option value="jordan">Jordan (Ministry of Awqaf)</option>
+        <option value="mwl">Muslim World League</option>
+        <option value="makkah">Umm al-Qura (Makkah)</option>
+        <option value="egypt">Egyptian General Authority</option>
+        <option value="karachi">University of Islamic Sciences, Karachi</option>
+        <option value="isna">ISNA (North America)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="rings-grid" id="ringsGrid"></div>
+
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="status-label">Next Prayer</div>
+      <div class="status-value small" id="nextName">—</div>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <div class="status-label">Countdown</div>
+      <div class="status-value" id="countdown">--:--:--</div>
+    </div>
+    <div class="status-divider"></div>
+    <div class="status-item">
+      <div class="status-label">Since Previous</div>
+      <div class="status-value small" id="since">—</div>
+    </div>
+  </div>
+
+  <div class="toggle-row">
+    <button class="toggle-btn" id="weeklyBtn" data-target="weeklyTable">
+      <span class="icon">📅</span> Weekly
+    </button>
+    <button class="toggle-btn" id="monthlyBtn" data-target="monthlyTable">
+      <span class="icon">🗓</span> Monthly
+    </button>
+  </div>
+
+  <div class="table-wrap" id="weeklyTable">
+    <div class="table-title">📅 Weekly Prayer Times</div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Day</th><th>Fajr</th><th>Sunrise</th><th>Dhuhr</th>
+            <th>Asr</th><th>Maghrib</th><th>Isha</th>
+          </tr>
+        </thead>
+        <tbody id="weeklyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="table-wrap" id="monthlyTable">
+    <div class="table-title">🗓 Monthly Prayer Times</div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Fajr</th><th>Sunrise</th><th>Dhuhr</th>
+            <th>Asr</th><th>Maghrib</th><th>Isha</th>
+          </tr>
+        </thead>
+        <tbody id="monthlyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">﷽ Simple &amp; Offline Prayer Times</div>
+</div>
+
+<script>
+/* =========================================================
+   Location data — expanded list of countries & main cities
+   ========================================================= */
+const LOCATIONS = {
+  jordan: {
+    name: "Jordan",
+    cities: {
+      amman:      { name: "Amman",        lat: 31.9539, lng: 35.9106 },
+      irbid:      { name: "Irbid",        lat: 32.5556, lng: 35.8500 },
+      zarqa:      { name: "Zarqa",        lat: 32.0728, lng: 36.0880 },
+      aqaba:      { name: "Aqaba",        lat: 29.5321, lng: 35.0063 },
+      salt:       { name: "As-Salt",      lat: 32.0392, lng: 35.7272 },
+      madaba:     { name: "Madaba",       lat: 31.7159, lng: 35.7938 },
+      jerash:     { name: "Jerash",       lat: 32.2803, lng: 35.8993 },
+      mafraq:     { name: "Al-Mafraq",    lat: 32.3428, lng: 36.2080 },
+      ajloun:     { name: "Ajloun",       lat: 32.3325, lng: 35.7517 },
+      karak:      { name: "Al-Karak",     lat: 31.1856, lng: 35.7047 },
+      maan:       { name: "Ma'an",        lat: 30.1962, lng: 35.7340 },
+      tafilah:    { name: "At-Tafilah",   lat: 30.8375, lng: 35.6042 }
+    }
+  },
+  saudi: {
+    name: "Saudi Arabia",
+    cities: {
+      makkah:  { name: "Makkah",  lat: 21.3891, lng: 39.8579 },
+      madinah: { name: "Madinah", lat: 24.5247, lng: 39.5692 },
+      riyadh:  { name: "Riyadh",  lat: 24.7136, lng: 46.6753 },
+      jeddah:  { name: "Jeddah",  lat: 21.4858, lng: 39.1925 },
+      dammam:  { name: "Dammam",  lat: 26.4207, lng: 50.0888 },
+      taif:    { name: "Taif",    lat: 21.2854, lng: 40.4183 },
+      tabuk:   { name: "Tabuk",   lat: 28.3835, lng: 36.5662 },
+      abha:    { name: "Abha",    lat: 18.2164, lng: 42.5053 }
+    }
+  },
+  egypt: {
+    name: "Egypt",
+    cities: {
+      cairo:      { name: "Cairo",      lat: 30.0444, lng: 31.2357 },
+      alexandria: { name: "Alexandria", lat: 31.2001, lng: 29.9187 },
+      giza:       { name: "Giza",       lat: 30.0131, lng: 31.2089 },
+      luxor:      { name: "Luxor",      lat: 25.6872, lng: 32.6396 },
+      aswan:      { name: "Aswan",      lat: 24.0889, lng: 32.8998 },
+      portsaid:   { name: "Port Said",  lat: 31.2653, lng: 32.3019 },
+      suez:       { name: "Suez",       lat: 29.9668, lng: 32.5498 }
+    }
+  },
+  usa: {
+    name: "United States",
+    cities: {
+      nyc:      { name: "New York",      lat: 40.7128, lng: -74.0060 },
+      chicago:  { name: "Chicago",       lat: 41.8781, lng: -87.6298 },
+      la:       { name: "Los Angeles",   lat: 34.0522, lng: -118.2437 },
+      houston:  { name: "Houston",       lat: 29.7604, lng: -95.3698 },
+      phoenix:  { name: "Phoenix",       lat: 33.4484, lng: -112.0740 },
+      detroit:  { name: "Detroit",       lat: 42.3314, lng: -83.0458 },
+      atlanta:  { name: "Atlanta",       lat: 33.7490, lng: -84.3880 },
+      dallas:   { name: "Dallas",        lat: 32.7767, lng: -96.7970 },
+      seattle:  { name: "Seattle",       lat: 47.6062, lng: -122.3321 },
+      miami:    { name: "Miami",         lat: 25.7617, lng: -80.1918 }
+    }
+  },
+  uk: {
+    name: "United Kingdom",
+    cities: {
+      london:      { name: "London",      lat: 51.5074, lng: -0.1278 },
+      birmingham:  { name: "Birmingham",  lat: 52.4862, lng: -1.8904 },
+      manchester:  { name: "Manchester",  lat: 53.4808, lng: -2.2426 },
+      leeds:       { name: "Leeds",       lat: 53.8008, lng: -1.5491 },
+      glasgow:     { name: "Glasgow",     lat: 55.8642, lng: -4.2518 },
+      liverpool:   { name: "Liverpool",   lat: 53.4084, lng: -2.9916 },
+      newcastle:   { name: "Newcastle",   lat: 54.9783, lng: -1.6178 },
+      bristol:     { name: "Bristol",     lat: 51.4545, lng: -2.5879 },
+      cardiff:     { name: "Cardiff",     lat: 51.4816, lng: -3.1791 },
+      belfast:     { name: "Belfast",     lat: 54.5973, lng: -5.9301 }
+    }
+  },
+  turkey: {
+    name: "Turkey",
+    cities: {
+      istanbul:  { name: "Istanbul",  lat: 41.0082, lng: 28.9784 },
+      ankara:    { name: "Ankara",    lat: 39.9334, lng: 32.8597 },
+      izmir:     { name: "Izmir",     lat: 38.4237, lng: 27.1428 },
+      bursa:     { name: "Bursa",     lat: 40.1826, lng: 29.0665 },
+      antalya:   { name: "Antalya",   lat: 36.8969, lng: 30.7133 },
+      konya:     { name: "Konya",     lat: 37.8746, lng: 32.4932 }
+    }
+  },
+  malaysia: {
+    name: "Malaysia",
+    cities: {
+      kl:         { name: "Kuala Lumpur", lat: 3.1390, lng: 101.6869 },
+      georgetown: { name: "George Town",  lat: 5.4141, lng: 100.3288 },
+      johor:      { name: "Johor Bahru",  lat: 1.4927, lng: 103.7414 },
+      ipoh:       { name: "Ipoh",         lat: 4.5975, lng: 101.0901 },
+      shahalam:   { name: "Shah Alam",    lat: 3.0733, lng: 101.5185 }
+    }
+  },
+  indonesia: {
+    name: "Indonesia",
+    cities: {
+      jakarta:   { name: "Jakarta",   lat: -6.2088, lng: 106.8456 },
+      surabaya:  { name: "Surabaya",  lat: -7.2575, lng: 112.7521 },
+      bandung:   { name: "Bandung",   lat: -6.9175, lng: 107.6191 },
+      medan:     { name: "Medan",     lat: 3.5952, lng: 98.6722 },
+      semarang:  { name: "Semarang",  lat: -6.9667, lng: 110.4167 },
+      makassar:  { name: "Makassar",  lat: -5.1477, lng: 119.4327 }
+    }
+  },
+  pakistan: {
+    name: "Pakistan",
+    cities: {
+      karachi:   { name: "Karachi",   lat: 24.8607, lng: 67.0011 },
+      lahore:    { name: "Lahore",    lat: 31.5204, lng: 74.3587 },
+      islamabad: { name: "Islamabad", lat: 33.6844, lng: 73.0479 },
+      rawalpindi:{ name: "Rawalpindi",lat: 33.5651, lng: 73.0169 },
+      faisalabad:{ name: "Faisalabad",lat: 31.4187, lng: 73.0791 },
+      multan:    { name: "Multan",    lat: 30.1575, lng: 71.5249 },
+      peshawar:  { name: "Peshawar",  lat: 34.0151, lng: 71.5249 },
+      quetta:    { name: "Quetta",    lat: 30.1798, lng: 66.9750 }
+    }
+  },
+  india: {
+    name: "India",
+    cities: {
+      delhi:     { name: "New Delhi", lat: 28.6139, lng: 77.2090 },
+      mumbai:    { name: "Mumbai",    lat: 19.0760, lng: 72.8777 },
+      kolkata:   { name: "Kolkata",   lat: 22.5726, lng: 88.3639 },
+      chennai:   { name: "Chennai",   lat: 13.0827, lng: 80.2707 },
+      bangalore: { name: "Bangalore", lat: 12.9716, lng: 77.5946 },
+      hyderabad: { name: "Hyderabad", lat: 17.3850, lng: 78.4867 },
+      ahmedabad: { name: "Ahmedabad", lat: 23.0225, lng: 72.5714 },
+      lucknow:   { name: "Lucknow",   lat: 26.8467, lng: 80.9462 }
+    }
+  },
+  bangladesh: {
+    name: "Bangladesh",
+    cities: {
+      dhaka:     { name: "Dhaka",     lat: 23.8103, lng: 90.4125 },
+      chittagong:{ name: "Chittagong",lat: 22.3569, lng: 91.7832 },
+      khulna:    { name: "Khulna",    lat: 22.8456, lng: 89.5403 },
+      rajshahi:  { name: "Rajshahi",  lat: 24.3745, lng: 88.6042 },
+      sylhet:    { name: "Sylhet",    lat: 24.8949, lng: 91.8687 }
+    }
+  },
+  nigeria: {
+    name: "Nigeria",
+    cities: {
+      lagos:  { name: "Lagos",  lat: 6.5244, lng: 3.3792 },
+      abuja:  { name: "Abuja",  lat: 9.0765, lng: 7.3986 },
+      kano:   { name: "Kano",   lat: 12.0022, lng: 8.5920 },
+      ibadan: { name: "Ibadan", lat: 7.3775, lng: 3.9470 },
+      kaduna: { name: "Kaduna", lat: 10.5222, lng: 7.4383 }
+    }
+  },
+  southafrica: {
+    name: "South Africa",
+    cities: {
+      joburg:   { name: "Johannesburg", lat: -26.2041, lng: 28.0473 },
+      capetown: { name: "Cape Town",    lat: -33.9249, lng: 18.4241 },
+      durban:   { name: "Durban",       lat: -29.8587, lng: 31.0218 },
+      pretoria: { name: "Pretoria",     lat: -25.7479, lng: 28.2293 }
+    }
+  },
+  france: {
+    name: "France",
+    cities: {
+      paris:    { name: "Paris",    lat: 48.8566, lng: 2.3522 },
+      marseille:{ name: "Marseille",lat: 43.2965, lng: 5.3698 },
+      lyon:     { name: "Lyon",     lat: 45.7640, lng: 4.8357 },
+      toulouse: { name: "Toulouse", lat: 43.6047, lng: 1.4442 },
+      nice:     { name: "Nice",     lat: 43.7102, lng: 7.2620 }
+    }
+  },
+  germany: {
+    name: "Germany",
+    cities: {
+      berlin:   { name: "Berlin",   lat: 52.5200, lng: 13.4050 },
+      hamburg:  { name: "Hamburg",  lat: 53.5511, lng: 9.9937 },
+      munich:   { name: "Munich",   lat: 48.1351, lng: 11.5820 },
+      cologne:  { name: "Cologne",  lat: 50.9375, lng: 6.9603 },
+      frankfurt:{ name: "Frankfurt",lat: 50.1109, lng: 8.6821 },
+      stuttgart:{ name: "Stuttgart",lat: 48.7758, lng: 9.1829 }
+    }
+  },
+  canada: {
+    name: "Canada",
+    cities: {
+      toronto:  { name: "Toronto",   lat: 43.6532, lng: -79.3832 },
+      montreal: { name: "Montreal",  lat: 45.5017, lng: -73.5673 },
+      vancouver:{ name: "Vancouver", lat: 49.2827, lng: -123.1207 },
+      calgary:  { name: "Calgary",   lat: 51.0447, lng: -114.0719 },
+      ottawa:   { name: "Ottawa",    lat: 45.4215, lng: -75.6972 }
+    }
+  },
+  australia: {
+    name: "Australia",
+    cities: {
+      sydney:   { name: "Sydney",    lat: -33.8688, lng: 151.2093 },
+      melbourne:{ name: "Melbourne", lat: -37.8136, lng: 144.9631 },
+      brisbane: { name: "Brisbane",  lat: -27.4698, lng: 153.0251 },
+      perth:    { name: "Perth",     lat: -31.9505, lng: 115.8605 },
+      adelaide: { name: "Adelaide",  lat: -34.9285, lng: 138.6007 }
+    }
+  },
+  uae: {
+    name: "United Arab Emirates",
+    cities: {
+      dubai:     { name: "Dubai",     lat: 25.2048, lng: 55.2708 },
+      abudhabi:  { name: "Abu Dhabi", lat: 24.4539, lng: 54.3773 },
+      sharjah:   { name: "Sharjah",   lat: 25.3463, lng: 55.4209 },
+      alain:     { name: "Al Ain",    lat: 24.2075, lng: 55.7447 }
+    }
+  },
+  qatar: {
+    name: "Qatar",
+    cities: {
+      doha:     { name: "Doha",     lat: 25.2854, lng: 51.5310 },
+      alwakrah: { name: "Al Wakrah",lat: 25.1659, lng: 51.5975 },
+      alkhor:   { name: "Al Khor",  lat: 25.6804, lng: 51.4969 }
+    }
+  },
+  kuwait: {
+    name: "Kuwait",
+    cities: {
+      kuwaitcity: { name: "Kuwait City", lat: 29.3759, lng: 47.9774 },
+      hawalli:    { name: "Hawalli",     lat: 29.3326, lng: 48.0289 },
+      salmiya:    { name: "Salmiya",     lat: 29.3339, lng: 48.0760 }
+    }
+  },
+  oman: {
+    name: "Oman",
+    cities: {
+      muscat: { name: "Muscat", lat: 23.5880, lng: 58.3829 },
+      salalah:{ name: "Salalah",lat: 17.0151, lng: 54.0924 },
+      sohar:  { name: "Sohar",  lat: 24.3473, lng: 56.7092 }
+    }
+  },
+  bahrain: {
+    name: "Bahrain",
+    cities: {
+      manama:   { name: "Manama",   lat: 26.2285, lng: 50.5860 },
+      rifa:     { name: "Riffa",    lat: 26.1300, lng: 50.5550 },
+      muharraq: { name: "Muharraq", lat: 26.2572, lng: 50.6119 }
+    }
+  }
+};
+
+const METHODS = {
+  jordan:  { fajr: 18,   isha: 18,   ishaIsMinutes: false },
+  mwl:     { fajr: 18,   isha: 17,   ishaIsMinutes: false },
+  makkah:  { fajr: 18.5, isha: 90,   ishaIsMinutes: true  },
+  egypt:   { fajr: 19.5, isha: 17.5, ishaIsMinutes: false },
+  karachi: { fajr: 18,   isha: 18,   ishaIsMinutes: false },
+  isna:    { fajr: 15,   isha: 15,   ishaIsMinutes: false }
+};
+
+/* Prayer Arabic names + blessings */
+const PRAYER_ARABIC = {
+  fajr:    'الفجر',
+  sunrise: 'الشروق',
+  dhuhr:   'الظهر',
+  asr:     'العصر',
+  maghrib: 'المغرب',
+  isha:    'العشاء'
+};
+
+const PRAYER_BLESSING = {
+  fajr:    'الصَّلَاةُ خَيْرٌ مِنَ النَّوْم',
+  sunrise: 'الشَّمْسُ تَشْرُقُ بِنُورِ الله',
+  dhuhr:   'حَيَّ عَلَى الصَّلَاة',
+  asr:     'حَيَّ عَلَى الْفَلَاح',
+  maghrib: 'حَيَّ عَلَى الصَّلَاة',
+  isha:    'حَيَّ عَلَى الْفَلَاح'
+};
+
+/* =========================================================
+   Astronomy helpers
+   ========================================================= */
+const D2R = Math.PI / 180;
+const R2D = 180 / Math.PI;
+
+const dsin = d => Math.sin(d * D2R);
+const dcos = d => Math.cos(d * D2R);
+const dtan = d => Math.tan(d * D2R);
+const darcsin = x => Math.asin(x) * R2D;
+const darccos = x => Math.acos(x) * R2D;
+const darctan2 = (y,x) => Math.atan2(y,x) * R2D;
+const darccot = x => Math.atan(1/x) * R2D;
+
+function fix(a, b){ a = a - b * Math.floor(a / b); return a < 0 ? a + b : a; }
+const fixAngle = a => fix(a, 360);
+const fixHour  = a => fix(a, 24);
+
+function julianDate(y, m, d){
+  if (m <= 2){ y -= 1; m += 12; }
+  const A = Math.floor(y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (y + 4716))
+       + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5;
+}
+
+function sunPosition(jd){
+  const D = jd - 2451545.0;
+  const g = fixAngle(357.529 + 0.98560028 * D);
+  const q = fixAngle(280.459 + 0.98564736 * D);
+  const L = fixAngle(q + 1.915 * dsin(g) + 0.020 * dsin(2 * g));
+  const e = 23.439 - 0.00000036 * D;
+  const RA = fixHour(darctan2(dcos(e) * dsin(L), dcos(L)) / 15);
+  const eqt = q / 15 - RA;
+  const decl = darcsin(dsin(e) * dsin(L));
+  return { declination: decl, equation: eqt };
+}
+
+function computeTimes(date, lat, lng, method){
+  const m = METHODS[method] || METHODS.mwl;
+  const jd = julianDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
+             - lng / (15 * 24);
+
+  const sunPosAt = t => sunPosition(jd + t / 24);
+  const midDay = t => fixHour(12 - sunPosAt(t).equation);
+
+  function sunAngleTime(angle, t, ccw){
+    const decl = sunPosAt(t).declination;
+    const noon = midDay(t);
+    const x = (-dsin(angle) - dsin(decl) * dsin(lat)) / (dcos(decl) * dcos(lat));
+    const c = Math.max(-1, Math.min(1, x));
+    const ha = darccos(c) / 15;
+    return noon + (ccw ? -ha : ha);
+  }
+  function asrTime(factor, t){
+    const decl = sunPosAt(t).declination;
+    const angle = -darccot(factor + dtan(Math.abs(lat - decl)));
+    return sunAngleTime(angle, t, false);
+  }
+
+  let t = { fajr: 5, sunrise: 6, dhuhr: 12, asr: 13, sunset: 18, isha: 19 };
+  for (let i = 0; i < 3; i++){
+    const prevIsha = t.isha || 19;
+    t = {
+      fajr:    sunAngleTime(m.fajr, t.fajr, true),
+      sunrise: sunAngleTime(0.833,  t.sunrise, true),
+      dhuhr:   midDay(t.dhuhr),
+      asr:     asrTime(1,           t.asr),
+      sunset:  sunAngleTime(0.833,  t.sunset, false),
+      isha:    m.ishaIsMinutes ? 0 : sunAngleTime(m.isha, prevIsha, false)
+    };
+    if (m.ishaIsMinutes) t.isha = t.sunset + m.isha / 60;
+  }
+
+  const tzHours = -date.getTimezoneOffset() / 60;
+  const adjust = tzHours - lng / 15;
+
+  return {
+    fajr:    t.fajr    + adjust,
+    sunrise: t.sunrise + adjust,
+    dhuhr:   t.dhuhr   + adjust,
+    asr:     t.asr     + adjust,
+    maghrib: t.sunset  + adjust,
+    isha:    t.isha    + adjust
+  };
+}
+
+function hoursToHM(h){
+  h = fixHour(h);
+  let hh = Math.floor(h);
+  let mm = Math.round((h - hh) * 60);
+  if (mm === 60){ hh = fixHour(hh + 1); mm = 0; }
+  return String(hh).padStart(2,"0") + ":" + String(mm).padStart(2,"0");
+}
+function hmToDate(hm, date){
+  const [h, m] = hm.split(":").map(Number);
+  const d = new Date(date);
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+function prayerTimesForDate(date, loc, method){
+  const raw = computeTimes(date, loc.lat, loc.lng, method);
+  const out = {};
+  for (const k in raw) out[k] = hoursToHM(raw[k]);
+  return out;
+}
+
+/* =========================================================
+   Hijri + Gregorian
+   ========================================================= */
+function getHijri(date = new Date()){
+  try {
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    }).format(date);
+  } catch(e){
+    try {
+      return new Intl.DateTimeFormat('en-u-ca-islamic', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      }).format(date);
+    } catch(_){ return '—'; }
+  }
+}
+function getGregorian(date = new Date()){
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  }).format(date);
+}
+
+/* =========================================================
+   State + DOM refs
+   ========================================================= */
+const state = { country: 'jordan', city: 'amman', method: 'jordan' };
+
+const $country   = document.getElementById('country');
+const $city      = document.getElementById('city');
+const $method    = document.getElementById('method');
+const $hijri     = document.getElementById('hijri');
+const $greg      = document.getElementById('gregorian');
+const $nextName  = document.getElementById('nextName');
+const $countdown = document.getElementById('countdown');
+const $since     = document.getElementById('since');
+const $weekly    = document.getElementById('weeklyBody');
+const $monthly   = document.getElementById('monthlyBody');
+const $ringsGrid = document.getElementById('ringsGrid');
+const $adhanBanner = document.getElementById('adhanBanner');
+const $adhanText   = document.getElementById('adhanText');
+const $installBtn  = document.getElementById('installBtn');
+const $notifBanner = document.getElementById('notifBanner');
+const $enableNotifBtn = document.getElementById('enableNotifBtn');
+
+const $fullscreen = document.getElementById('prayerFullscreen');
+const $fsClose    = document.getElementById('fsClose');
+const $fsArabic   = document.getElementById('fsArabic');
+const $fsIcon     = document.getElementById('fsIcon');
+const $fsLabel    = document.getElementById('fsLabel');
+const $fsTime     = document.getElementById('fsTime');
+const $fsCurrentTime = document.getElementById('fsCurrentTime');
+const $fsStatus   = document.getElementById('fsStatus');
+const $fsCountdown = document.getElementById('fsCountdown');
+const $fsCountdownLabel = document.getElementById('fsCountdownLabel');
+const $fsBlessing = document.getElementById('fsBlessing');
+const $fsRingProgress = document.getElementById('fsRingProgress');
+const $fsParticles = document.getElementById('fsParticles');
+
+const currentLoc = () => LOCATIONS[state.country].cities[state.city];
+
+const PRAYER_META = [
+  { key: 'fajr',    label: 'Fajr',    icon: '🌙' },
+  { key: 'sunrise', label: 'Sunrise', icon: '☀️' },
+  { key: 'dhuhr',   label: 'Dhuhr',   icon: '🌞' },
+  { key: 'asr',     label: 'Asr',     icon: '🌤' },
+  { key: 'maghrib', label: 'Maghrib', icon: '🌅' },
+  { key: 'isha',    label: 'Isha',    icon: '🌙' }
+];
+
+const ADHAN_PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+const PRAYER_LABELS = {
+  fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha'
+};
+
+function prayerListFor(date){
+  const loc = currentLoc();
+  const t = prayerTimesForDate(date, loc, state.method);
+  return [
+    { key:'fajr',    label:'Fajr',                 time: hmToDate(t.fajr,    date), isGap:false },
+    { key:'sunrise', label:'Sunrise · End of Fajr', time: hmToDate(t.sunrise, date), isGap:true  },
+    { key:'dhuhr',   label:'Dhuhr',                time: hmToDate(t.dhuhr,   date), isGap:false },
+    { key:'asr',     label:'Asr',                  time: hmToDate(t.asr,     date), isGap:false },
+    { key:'maghrib', label:'Maghrib',              time: hmToDate(t.maghrib, date), isGap:false },
+    { key:'isha',    label:'Isha',                 time: hmToDate(t.isha,    date), isGap:false }
+  ];
+}
+
+function getNextPrev(now){
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const y  = new Date(today); y.setDate(y.getDate() - 1);
+  const tm = new Date(today); tm.setDate(tm.getDate() + 1);
+
+  const all = [
+    ...prayerListFor(y),
+    ...prayerListFor(today),
+    ...prayerListFor(tm)
+  ].sort((a,b) => a.time - b.time);
+
+  let prev = null, next = null;
+  for (const p of all){
+    if (p.time <= now) prev = p;
+    else { next = p; break; }
+  }
+  if (!next) next = all[all.length - 1];
+  if (!prev) prev = all[0];
+  return { next, prev };
+}
+
+function fmtDur(ms){
+  if (ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function fmtClock(date){
+  return String(date.getHours()).padStart(2,'0') + ':' +
+         String(date.getMinutes()).padStart(2,'0') + ':' +
+         String(date.getSeconds()).padStart(2,'0');
+}
+
+/* =========================================================
+   ADHAN ENGINE
+   ========================================================= */
+let audioCtx = null;
+let lastAdhanKey = null;
+
+function ensureAudioCtx(){
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e){ audioCtx = null; }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(()=>{});
+  }
+  return audioCtx;
+}
+
+function playAdhanTone(){
+  const ctx = ensureAudioCtx();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0.0001, now);
+  master.gain.exponentialRampToValueAtTime(0.28, now + 0.8);
+  master.gain.exponentialRampToValueAtTime(0.0001, now + 6.5);
+  master.connect(ctx.destination);
+
+  const delay = ctx.createDelay(1.0);
+  delay.delayTime.setValueAtTime(0.32, now);
+  const fb = ctx.createGain();
+  fb.gain.setValueAtTime(0.28, now);
+  delay.connect(fb);
+  fb.connect(delay);
+  const wet = ctx.createGain();
+  wet.gain.setValueAtTime(0.35, now);
+  delay.connect(wet);
+  wet.connect(master);
+
+  const notes = [
+    { f: 392.00, t: 0.0,  d: 1.1 },
+    { f: 440.00, t: 1.0,  d: 1.1 },
+    { f: 523.25, t: 2.0,  d: 1.4 },
+    { f: 587.33, t: 3.3,  d: 1.2 },
+    { f: 523.25, t: 4.5,  d: 1.6 },
+    { f: 440.00, t: 6.0,  d: 1.6 },
+    { f: 392.00, t: 7.5,  d: 2.2 }
+  ];
+
+  notes.forEach(n => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(n.f, now + n.t);
+
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.setValueAtTime(5.2, now);
+    lfoGain.gain.setValueAtTime(3.5, now);
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start(now + n.t);
+    lfo.stop(now + n.t + n.d + 0.6);
+
+    gain.gain.setValueAtTime(0.0001, now + n.t);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + n.t + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
+
+    osc.connect(gain);
+    gain.connect(master);
+    gain.connect(delay);
+
+    osc.start(now + n.t);
+    osc.stop(now + n.t + n.d + 0.1);
+  });
+
+  const drone = ctx.createOscillator();
+  const droneGain = ctx.createGain();
+  drone.type = 'sine';
+  drone.frequency.setValueAtTime(130.81, now);
+  droneGain.gain.setValueAtTime(0.0001, now);
+  droneGain.gain.exponentialRampToValueAtTime(0.07, now + 1.2);
+  droneGain.gain.exponentialRampToValueAtTime(0.0001, now + 8.5);
+  drone.connect(droneGain);
+  droneGain.connect(master);
+  drone.start(now);
+  drone.stop(now + 9);
+}
+
+function showAdhanBanner(prayerLabel){
+  $adhanText.textContent = `Time for ${prayerLabel} Prayer`;
+  $adhanBanner.classList.add('show');
+  clearTimeout(showAdhanBanner._t);
+  showAdhanBanner._t = setTimeout(() => {
+    $adhanBanner.classList.remove('show');
+  }, 8000);
+}
+
+function sendSystemNotification(prayerLabel){
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(`🕌 ${prayerLabel} Prayer`, {
+      body: `It is time for ${prayerLabel} prayer.`,
+      tag: 'adhan-' + prayerLabel,
+      renotify: true,
+      silent: false
+    });
+    setTimeout(() => { try { n.close(); } catch(e){} }, 30000);
+    n.onclick = () => { try { window.focus(); } catch(e){} };
+  } catch(e){}
+}
+
+function fireAdhan(prayerKey, prayerTime){
+  const key = prayerKey + '@' + prayerTime.toISOString();
+  if (lastAdhanKey === key) return;
+  lastAdhanKey = key;
+
+  const label = PRAYER_LABELS[prayerKey] || prayerKey;
+  playAdhanTone();
+  showAdhanBanner(label);
+  sendSystemNotification(label);
+
+  if (navigator.vibrate) {
+    try { navigator.vibrate([220, 90, 220, 90, 320]); } catch(e){}
+  }
+}
+
+function checkAdhan(now){
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const loc = currentLoc();
+
+  for (const key of ADHAN_PRAYERS) {
+    const times = prayerTimesForDate(today, loc, state.method);
+    const prayerDate = hmToDate(times[key], today);
+    const diff = now - prayerDate;
+    if (diff >= 0 && diff < 5000) {
+      fireAdhan(key, prayerDate);
+    }
+  }
+}
+
+/* =========================================================
+   Ring rendering
+   ========================================================= */
+const RING_RADIUS = 40;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+function renderRings(){
+  const now = new Date();
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const loc = currentLoc();
+  const t = prayerTimesForDate(today, loc, state.method);
+  const { next, prev } = getNextPrev(now);
+
+  const prayerDates = {};
+  PRAYER_META.forEach(p => {
+    prayerDates[p.key] = hmToDate(t[p.key], today);
+  });
+
+  const cycle = PRAYER_META.map(p => ({
+    key: p.key,
+    label: p.label,
+    icon: p.icon,
+    time: prayerDates[p.key],
+    hm: t[p.key]
+  }));
+
+  $ringsGrid.innerHTML = '';
+
+  cycle.forEach((item, idx) => {
+    const prevItem = idx === 0 ? cycle[cycle.length - 1] : cycle[idx - 1];
+    let startTime, endTime;
+
+    if (idx === 0) {
+      const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+      const yTimes = prayerTimesForDate(yesterday, loc, state.method);
+      startTime = hmToDate(yTimes.isha, yesterday);
+      endTime = item.time;
+    } else {
+      startTime = prevItem.time;
+      endTime = item.time;
+    }
+
+    const total = endTime - startTime;
+    let elapsed = now - startTime;
+    let progress = total > 0 ? Math.min(1, Math.max(0, elapsed / total)) : 0;
+
+    if (prev.key === item.key && prev.time.toDateString() === item.time.toDateString()) {
+      progress = 1;
+    }
+
+    const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
+    const isActive = (next.key === item.key && next.time.toDateString() === item.time.toDateString());
+
+    const card = document.createElement('div');
+    card.className = 'ring-card' + (isActive ? ' active' : '');
+    card.dataset.prayer = item.key;
+
+    card.innerHTML = `
+      <svg class="ring-svg" viewBox="0 0 100 100">
+        <circle class="ring-bg" cx="50" cy="50" r="${RING_RADIUS}" />
+        <circle class="ring-progress" cx="50" cy="50" r="${RING_RADIUS}"
+          stroke-dasharray="${RING_CIRCUMFERENCE}"
+          stroke-dashoffset="${dashOffset}"
+          style="stroke-dashoffset: ${dashOffset}px;"
+        />
+      </svg>
+      <span class="ring-icon">${item.icon}</span>
+      <span class="ring-name">${item.label}</span>
+      <span class="ring-time">${item.hm}</span>
+      <span class="ring-count">${isActive ? 'NOW' : ''}</span>
+    `;
+
+    card.addEventListener('click', () => openFullscreen(item.key));
+
+    $ringsGrid.appendChild(card);
+  });
+}
+
+/* =========================================================
+   FULLSCREEN PRAYER DETAIL
+   ========================================================= */
+const FS_RADIUS = 82;
+const FS_CIRCUMFERENCE = 2 * Math.PI * FS_RADIUS;
+$fsRingProgress.setAttribute('stroke-dasharray', FS_CIRCUMFERENCE);
+$fsRingProgress.setAttribute('stroke-dashoffset', FS_CIRCUMFERENCE);
+
+let fsActiveKey = null;
+let fsRafId = null;
+
+function buildParticles(){
+  $fsParticles.innerHTML = '';
+  const colors = ['#ffd966', '#e6b84c', '#2ecc71', '#9a6cff', '#ff9ecb'];
+  for (let i = 0; i < 22; i++) {
+    const p = document.createElement('div');
+    p.className = 'fs-particle';
+    const size = 4 + Math.random() * 10;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.bottom = (Math.random() * 40) + '%';
+    p.style.background = `radial-gradient(circle, ${colors[i % colors.length]}, transparent 70%)`;
+    p.style.animationDelay = (Math.random() * 7) + 's';
+    p.style.animationDuration = (5 + Math.random() * 4) + 's';
+    $fsParticles.appendChild(p);
+  }
+}
+
+function prayerWindow(prayerKey){
+  const now = new Date();
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const loc = currentLoc();
+  const t = prayerTimesForDate(today, loc, state.method);
+
+  const idx = PRAYER_META.findIndex(p => p.key === prayerKey);
+  const isFirst = idx === 0;
+
+  let startTime, endTime;
+  if (isFirst) {
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+    const yTimes = prayerTimesForDate(yesterday, loc, state.method);
+    startTime = hmToDate(yTimes.isha, yesterday);
+    endTime = hmToDate(t[prayerKey], today);
+  } else {
+    const prevKey = PRAYER_META[idx - 1].key;
+    startTime = hmToDate(t[prevKey], today);
+    endTime = hmToDate(t[prayerKey], today);
+  }
+
+  return { startTime, endTime, prayerTime: hmToDate(t[prayerKey], today), allTimes: t };
+}
+
+function updateFullscreen(){
+  if (!fsActiveKey) return;
+
+  const now = new Date();
+  const { startTime, endTime, prayerTime } = prayerWindow(fsActiveKey);
+
+  const total = endTime - startTime;
+  const elapsed = now - startTime;
+  const remaining = prayerTime - now;
+
+  let progress = total > 0 ? Math.min(1, Math.max(0, elapsed / total)) : 0;
+
+  const dashOffset = FS_CIRCUMFERENCE * (1 - progress);
+  $fsRingProgress.style.strokeDashoffset = dashOffset;
+
+  $fsCurrentTime.textContent = fmtClock(now);
+
+  const isNext = (getNextPrev(now).next.key === fsActiveKey);
+  const isPast = now >= prayerTime && !isNext;
+
+  if (remaining > 0) {
+    $fsStatus.textContent = isNext ? 'Upcoming' : 'Today';
+    $fsCountdownLabel.textContent = 'Time Remaining';
+    $fsCountdown.textContent = fmtDur(remaining);
+  } else {
+    $fsStatus.textContent = 'Passed';
+    $fsCountdownLabel.textContent = 'Time Since';
+    $fsCountdown.textContent = fmtDur(now - prayerTime);
+  }
+}
+
+function openFullscreen(prayerKey){
+  fsActiveKey = prayerKey;
+
+  const meta = PRAYER_META.find(p => p.key === prayerKey);
+  const { prayerTime } = prayerWindow(prayerKey);
+
+  $fsArabic.textContent = PRAYER_ARABIC[prayerKey] || meta.label;
+  $fsIcon.textContent = meta.icon;
+  $fsLabel.textContent = meta.label;
+  $fsTime.textContent = prayerTimesForDate(new Date(), currentLoc(), state.method)[prayerKey];
+  $fsBlessing.textContent = PRAYER_BLESSING[prayerKey] || 'حَيَّ عَلَى الصَّلَاة';
+
+  buildParticles();
+  updateFullscreen();
+
+  $fullscreen.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  clearInterval(fsRafId);
+  fsRafId = setInterval(updateFullscreen, 1000);
+
+  ensureAudioCtx();
+}
+
+function closeFullscreen(){
+  $fullscreen.classList.remove('open');
+  document.body.style.overflow = '';
+  clearInterval(fsRafId);
+  fsRafId = null;
+  fsActiveKey = null;
+}
+
+$fsClose.addEventListener('click', closeFullscreen);
+
+$fullscreen.addEventListener('click', (e) => {
+  if (e.target === $fullscreen || e.target.classList.contains('fs-bg') ||
+      e.target.classList.contains('fs-stars') || e.target.classList.contains('fs-pattern') ||
+      e.target.classList.contains('fs-halo')) {
+    closeFullscreen();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $fullscreen.classList.contains('open')) {
+    closeFullscreen();
+  }
+});
+
+/* =========================================================
+   Tables rendering
+   ========================================================= */
+function renderWeekly(){
+  $weekly.innerHTML = '';
+  const start = new Date(); start.setHours(0,0,0,0);
+  const loc = currentLoc();
+  const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const now = new Date();
+  const { next } = getNextPrev(now);
+
+  for (let i = 0; i < 7; i++){
+    const d = new Date(start); d.setDate(d.getDate() + i);
+    const t = prayerTimesForDate(d, loc, state.method);
+    const isToday = i === 0;
+    const tr = document.createElement('tr');
+    if (isToday) tr.className = 'today-row';
+    tr.innerHTML = `
+      <td class="name">${DOW[d.getDay()]}${isToday ? ' · Today' : ''}</td>
+      <td class="time">${t.fajr}</td>
+      <td class="time">${t.sunrise}</td>
+      <td class="time">${t.dhuhr}</td>
+      <td class="time">${t.asr}</td>
+      <td class="time">${t.maghrib}</td>
+      <td class="time">${t.isha}</td>
+    `;
+    if (isToday){
+      const keys = ['fajr','sunrise','dhuhr','asr','maghrib','isha'];
+      tr.querySelectorAll('td.time').forEach((td, idx) => {
+        if (keys[idx] === next.key && next.time.toDateString() === d.toDateString()) {
+          td.classList.add('active-prayer');
+        }
+      });
+    }
+    $weekly.appendChild(tr);
+  }
+}
+
+function renderMonthly(){
+  $monthly.innerHTML = '';
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const days = new Date(year, month + 1, 0).getDate();
+  const loc = currentLoc();
+  const { next } = getNextPrev(now);
+
+  for (let i = 1; i <= days; i++){
+    const d = new Date(year, month, i);
+    const t = prayerTimesForDate(d, loc, state.method);
+    const isToday = d.toDateString() === now.toDateString();
+    const tr = document.createElement('tr');
+    if (isToday) tr.className = 'today-row';
+    tr.innerHTML = `
+      <td class="name">${i}${isToday ? ' · Today' : ''}</td>
+      <td class="time">${t.fajr}</td>
+      <td class="time">${t.sunrise}</td>
+      <td class="time">${t.dhuhr}</td>
+      <td class="time">${t.asr}</td>
+      <td class="time">${t.maghrib}</td>
+      <td class="time">${t.isha}</td>
+    `;
+    if (isToday){
+      const keys = ['fajr','sunrise','dhuhr','asr','maghrib','isha'];
+      tr.querySelectorAll('td.time').forEach((td, idx) => {
+        if (keys[idx] === next.key && next.time.toDateString() === d.toDateString()) {
+          td.classList.add('active-prayer');
+        }
+      });
+    }
+    $monthly.appendChild(tr);
+  }
+}
+
+/* =========================================================
+   Tick
+   ========================================================= */
+function tick(){
+  const now = new Date();
+  const { next, prev } = getNextPrev(now);
+  $nextName.textContent  = next.label;
+  $countdown.textContent = fmtDur(next.time - now);
+  $since.textContent     = fmtDur(now - prev.time).slice(0, 5);
+
+  document.querySelectorAll('.ring-card').forEach(card => {
+    const key = card.dataset.prayer;
+    const isActive = (next.key === key && next.time.toDateString() === now.toDateString());
+    card.classList.toggle('active', isActive);
+    const countEl = card.querySelector('.ring-count');
+    if (countEl) countEl.textContent = isActive ? 'NOW' : '';
+  });
+
+  const loc = currentLoc();
+  const today = new Date(now); today.setHours(0,0,0,0);
+  const t = prayerTimesForDate(today, loc, state.method);
+  const prayerDates = {};
+  PRAYER_META.forEach(p => {
+    prayerDates[p.key] = hmToDate(t[p.key], today);
+  });
+
+  document.querySelectorAll('.ring-card').forEach(card => {
+    const key = card.dataset.prayer;
+    const idx = PRAYER_META.findIndex(p => p.key === key);
+    const prevItem = idx === 0 ? PRAYER_META[PRAYER_META.length - 1] : PRAYER_META[idx - 1];
+
+    let startTime, endTime;
+    if (idx === 0) {
+      const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+      const yTimes = prayerTimesForDate(yesterday, loc, state.method);
+      startTime = hmToDate(yTimes.isha, yesterday);
+      endTime = prayerDates[key];
+    } else {
+      startTime = prayerDates[prevItem.key];
+      endTime = prayerDates[key];
+    }
+
+    const total = endTime - startTime;
+    let elapsed = now - startTime;
+    let progress = total > 0 ? Math.min(1, Math.max(0, elapsed / total)) : 0;
+
+    if (prev.key === key && prev.time.toDateString() === now.toDateString()) {
+      progress = 1;
+    }
+
+    const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
+    const circle = card.querySelector('.ring-progress');
+    if (circle) {
+      circle.setAttribute('stroke-dashoffset', dashOffset);
+      circle.style.strokeDashoffset = dashOffset + 'px';
+    }
+  });
+
+  checkAdhan(now);
+}
+
+/* =========================================================
+   Refresh + init
+   ========================================================= */
+function refreshAll(){
+  $hijri.textContent = getHijri();
+  $greg.textContent  = getGregorian();
+  renderRings();
+  renderWeekly();
+  renderMonthly();
+  tick();
+}
+
+function populateCountries(){
+  $country.innerHTML = '';
+  for (const key in LOCATIONS){
+    const o = document.createElement('option');
+    o.value = key; o.textContent = LOCATIONS[key].name;
+    $country.appendChild(o);
+  }
+  $country.value = state.country;
+}
+function populateCities(){
+  $city.innerHTML = '';
+  const cities = LOCATIONS[state.country].cities;
+  for (const key in cities){
+    const o = document.createElement('option');
+    o.value = key; o.textContent = cities[key].name;
+    $city.appendChild(o);
+  }
+  if (!cities[state.city]) state.city = Object.keys(cities)[0];
+  $city.value = state.city;
+}
+
+/* =========================================================
+   PWA: Service Worker + install prompt
+   ========================================================= */
+let deferredPrompt = null;
+let swRegistration = null;
+
+function registerServiceWorker(){
+  if (!('serviceWorker' in navigator)) return;
+  const swCode = `
+    const CACHE = 'nur-prayer-v2';
+    const ASSETS = ['./'];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{})).then(()=>self.skipWaiting()));
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(()=>self.clients.claim()));
+    });
+    self.addEventListener('fetch', e => {
+      if (e.request.method !== 'GET') return;
+      e.respondWith(
+        caches.match(e.request).then(cached => {
+          if (cached) return cached;
+          return fetch(e.request).then(resp => {
+            try {
+              const copy = resp.clone();
+              caches.open(CACHE).then(c => c.put(e.request, copy)).catch(()=>{});
+            } catch(err){}
+            return resp;
+          }).catch(() => caches.match('./'));
+        })
+      );
+    });
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+
+  navigator.serviceWorker.register(swUrl, { scope: './' })
+    .then(reg => { swRegistration = reg; console.log('SW registered'); })
+    .catch(err => console.warn('SW registration failed:', err));
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  $installBtn.classList.add('show');
+});
+
+$installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) {
+    alert('To install: tap your browser menu → "Add to Home Screen" / "Install App".');
+    return;
+  }
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') {
+    $installBtn.classList.remove('show');
+  }
+  deferredPrompt = null;
+});
+
+window.addEventListener('appinstalled', () => {
+  $installBtn.classList.remove('show');
+  deferredPrompt = null;
+});
+
+/* =========================================================
+   Notifications permission
+   ========================================================= */
+function updateNotifBanner(){
+  if (!('Notification' in window)) {
+    $notifBanner.classList.remove('show');
+    return;
+  }
+  if (Notification.permission === 'default') {
+    $notifBanner.classList.add('show');
+  } else {
+    $notifBanner.classList.remove('show');
+  }
+}
+
+$enableNotifBtn.addEventListener('click', async () => {
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      ensureAudioCtx();
+      $notifBanner.classList.remove('show');
+      sendSystemNotification('Notifications Enabled');
+    } else {
+      $notifBanner.classList.remove('show');
+    }
+  } catch(e){
+    $notifBanner.classList.remove('show');
+  }
+});
+
+['click','touchstart','keydown'].forEach(evt => {
+  window.addEventListener(evt, () => { ensureAudioCtx(); }, { once: true, passive: true });
+});
+
+/* =========================================================
+   Init
+   ========================================================= */
+function init(){
+  populateCountries();
+  populateCities();
+  $method.value = state.method;
+
+  $country.addEventListener('change', () => {
+    state.country = $country.value;
+    populateCities();
+    refreshAll();
+  });
+  $city.addEventListener('change', () => {
+    state.city = $city.value;
+    refreshAll();
+  });
+  $method.addEventListener('change', () => {
+    state.method = $method.value;
+    refreshAll();
+  });
+
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      const table = document.getElementById(target);
+      const isVisible = table.classList.contains('visible');
+
+      document.querySelectorAll('.table-wrap').forEach(t => t.classList.remove('visible'));
+      document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+
+      if (!isVisible) {
+        table.classList.add('visible');
+        btn.classList.add('active');
+      }
+    });
+  });
+
+  updateNotifBanner();
+  registerServiceWorker();
+  refreshAll();
+
+  setInterval(tick, 1000);
+  setInterval(refreshAll, 60 * 60 * 1000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
