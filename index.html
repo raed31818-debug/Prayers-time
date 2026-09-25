@@ -191,7 +191,7 @@
       font-weight: 600;
     }
 
-    select {
+    select, input[type="url"] {
       width: 100%;
       padding: 9px 12px;
       background: #0f1420;
@@ -201,6 +201,9 @@
       font-size: 0.82rem;
       font-family: inherit;
       outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    select {
       appearance: none;
       background-image:
         linear-gradient(45deg, transparent 50%, #e6b84c 50%),
@@ -210,9 +213,8 @@
         calc(100% - 10px) calc(50% - 2px);
       background-size: 5px 5px, 5px 5px;
       background-repeat: no-repeat;
-      transition: border-color .2s, box-shadow .2s;
     }
-    select:focus {
+    select:focus, input[type="url"]:focus {
       border-color: #e6b84c;
       box-shadow: 0 0 0 2px rgba(230, 184, 76, 0.2);
     }
@@ -1353,6 +1355,10 @@
       background: rgba(230, 184, 76, 0.25);
       border-color: #e6b84c;
     }
+    .adhan-test-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
     .adhan-notif-toggle {
       display: flex;
@@ -1403,6 +1409,31 @@
       transform: translateY(-50%) translateX(20px);
       background: #ffe18c;
       box-shadow: 0 0 10px rgba(255, 215, 120, 0.8);
+    }
+
+    /* Custom URL row */
+    .custom-url-row {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(10, 14, 24, 0.5);
+      border-radius: 10px;
+      border: 1px dashed rgba(230, 184, 76, 0.25);
+      display: none;
+    }
+    .custom-url-row.show { display: block; }
+    .custom-url-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .custom-url-hint {
+      font-size: 0.62rem;
+      color: #6b7a96;
+      margin-top: 6px;
+      line-height: 1.4;
     }
 
     @media (max-width: 420px) {
@@ -1722,23 +1753,34 @@
         <span class="icon">🔊</span> Adhan Sound
       </div>
 
-      <div class="adhan-option" data-mode="short">
+      <div class="adhan-option" data-mode="full">
         <div class="adhan-option-info">
           <div class="adhan-option-icon">🕌</div>
           <div>
-            <div class="adhan-option-name">Short Adhan</div>
-            <div class="adhan-option-desc">Quick "Allahu Akbar" call (~4 seconds) — recommended</div>
+            <div class="adhan-option-name">Full Adhan</div>
+            <div class="adhan-option-desc">Your recorded full Adhan — recommended for home & mosque</div>
           </div>
         </div>
         <div class="adhan-option-radio"></div>
       </div>
 
-      <div class="adhan-option" data-mode="full">
+      <div class="adhan-option" data-mode="short">
         <div class="adhan-option-info">
-          <div class="adhan-option-icon">🌙</div>
+          <div class="adhan-option-icon">📿</div>
           <div>
-            <div class="adhan-option-name">Full Melody</div>
-            <div class="adhan-option-desc">Extended traditional tone (~9 seconds)</div>
+            <div class="adhan-option-name">Short Adhan</div>
+            <div class="adhan-option-desc">Brief reminder — perfect for work or public places</div>
+          </div>
+        </div>
+        <div class="adhan-option-radio"></div>
+      </div>
+
+      <div class="adhan-option" data-mode="synth">
+        <div class="adhan-option-info">
+          <div class="adhan-option-icon">🎵</div>
+          <div>
+            <div class="adhan-option-name">Synth Tone</div>
+            <div class="adhan-option-desc">Offline-safe electronic tone (used if MP3 unavailable)</div>
           </div>
         </div>
         <div class="adhan-option-radio"></div>
@@ -1767,6 +1809,26 @@
 
     <div class="settings-section">
       <div class="settings-section-title">
+        <span class="icon">🔗</span> Custom Adhan URLs (advanced)
+      </div>
+
+      <div class="custom-url-row show">
+        <div class="custom-url-label">Full Adhan URL (MP3)</div>
+        <input type="url" id="fullAdhanUrl" placeholder="https://...">
+      </div>
+
+      <div class="custom-url-row show">
+        <div class="custom-url-label">Short Adhan URL (MP3)</div>
+        <input type="url" id="shortAdhanUrl" placeholder="https://...">
+      </div>
+
+      <div class="custom-url-hint">
+        Leave blank to use the built-in URLs. Both files are cached after first play so they work offline.
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">
         <span class="icon">ℹ️</span> About
       </div>
       <p style="font-size:0.72rem; color:#8b9bb8; line-height:1.6;">
@@ -1790,6 +1852,12 @@
 </div>
 
 <script>
+/* =========================================================
+   ADHAN AUDIO SOURCES
+   ========================================================= */
+const DEFAULT_FULL_ADHAN_URL  = 'https://raed31818-debug.github.io/Prayers-time/Full_Athan_Clean_Echo.mp3';
+const DEFAULT_SHORT_ADHAN_URL = 'https://raed31818-debug.github.io/Prayers-time/Athan_Clean_Echo.mp3';
+
 /* =========================================================
    Location data
    ========================================================= */
@@ -2031,12 +2099,14 @@ const state = {
   city: 'amman',
   method: 'jordan',
   customLocation: null,
-  adhanMode: 'short',
-  adhanEnabled: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true }
+  adhanMode: 'full',
+  adhanEnabled: { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true },
+  fullAdhanUrl: '',
+  shortAdhanUrl: ''
 };
 
 try {
-  const saved = localStorage.getItem('nur_state_v2');
+  const saved = localStorage.getItem('nur_state_v3');
   if (saved) {
     const p = JSON.parse(saved);
     if (p.country) state.country = p.country;
@@ -2045,20 +2115,31 @@ try {
     if (p.customLocation) state.customLocation = p.customLocation;
     if (p.adhanMode) state.adhanMode = p.adhanMode;
     if (p.adhanEnabled) state.adhanEnabled = { ...state.adhanEnabled, ...p.adhanEnabled };
+    if (p.fullAdhanUrl) state.fullAdhanUrl = p.fullAdhanUrl;
+    if (p.shortAdhanUrl) state.shortAdhanUrl = p.shortAdhanUrl;
   }
 } catch(e) {}
 
 function saveState(){
   try {
-    localStorage.setItem('nur_state_v2', JSON.stringify({
+    localStorage.setItem('nur_state_v3', JSON.stringify({
       country: state.country,
       city: state.city,
       method: state.method,
       customLocation: state.customLocation,
       adhanMode: state.adhanMode,
-      adhanEnabled: state.adhanEnabled
+      adhanEnabled: state.adhanEnabled,
+      fullAdhanUrl: state.fullAdhanUrl,
+      shortAdhanUrl: state.shortAdhanUrl
     }));
   } catch(e) {}
+}
+
+function getFullAdhanUrl(){
+  return (state.fullAdhanUrl && state.fullAdhanUrl.trim()) || DEFAULT_FULL_ADHAN_URL;
+}
+function getShortAdhanUrl(){
+  return (state.shortAdhanUrl && state.shortAdhanUrl.trim()) || DEFAULT_SHORT_ADHAN_URL;
 }
 
 const $ = id => document.getElementById(id);
@@ -2334,6 +2415,7 @@ function detectLocation(){
    ========================================================= */
 let audioCtx = null;
 let lastAdhanKey = null;
+let currentAudioEl = null;
 
 function ensureAudioCtx(){
   if (!audioCtx) {
@@ -2344,98 +2426,58 @@ function ensureAudioCtx(){
   return audioCtx;
 }
 
-/* Short Adhan: ~4 second traditional "Allahu Akbar" call
-   Uses layered sine waves with vibrato to mimic a vocal call
-   - Copyright-free (synthesized)
-   - Small memory footprint
-   - Quick playback */
-function playShortAdhan(){
-  const ctx = ensureAudioCtx();
-  if (!ctx) return;
-  const now = ctx.currentTime;
+/* Play MP3 with automatic fallback to synth tone */
+function playMp3(url, fallbackFn){
+  // Stop any currently playing audio
+  if (currentAudioEl){
+    try { currentAudioEl.pause(); } catch(e){}
+    currentAudioEl = null;
+  }
 
-  // Master output
-  const master = ctx.createGain();
-  master.gain.setValueAtTime(0.0001, now);
-  master.gain.exponentialRampToValueAtTime(0.32, now + 0.3);
-  master.gain.setValueAtTime(0.32, now + 3.2);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + 4.5);
-  master.connect(ctx.destination);
+  const audio = new Audio();
+  audio.crossOrigin = 'anonymous';
+  audio.preload = 'auto';
+  audio.volume = 1.0;
+  let fellBack = false;
 
-  // Simple hall reverb
-  const delay = ctx.createDelay(0.8);
-  delay.delayTime.setValueAtTime(0.22, now);
-  const fb = ctx.createGain();
-  fb.gain.setValueAtTime(0.25, now);
-  delay.connect(fb); fb.connect(delay);
-  const wet = ctx.createGain();
-  wet.gain.setValueAtTime(0.3, now);
-  delay.connect(wet); wet.connect(master);
+  const fallback = () => {
+    if (fellBack) return;
+    fellBack = true;
+    console.warn('MP3 failed, falling back to synth tone');
+    try { audio.pause(); } catch(e){}
+    if (typeof fallbackFn === 'function') fallbackFn();
+  };
 
-  // Four short call phrases mimicking "Allahu Akbar"
-  // Each phrase has 2 syllables (Al-la-hu Ak-bar style)
-  const phrases = [
-    { t: 0.0,  notes: [220.00, 246.94, 261.63], dur: 0.9 },   // A3 C4
-    { t: 1.0,  notes: [246.94, 261.63, 293.66], dur: 0.9 },   // B3 D4
-    { t: 2.0,  notes: [261.63, 293.66, 329.63], dur: 1.0 },   // C4 E4
-    { t: 3.1,  notes: [293.66, 329.63, 349.23], dur: 1.1 }    // D4 F4
-  ];
+  audio.addEventListener('error', fallback);
+  audio.addEventListener('abort', fallback);
 
-  phrases.forEach(phrase => {
-    phrase.notes.forEach((freq, i) => {
-      const start = now + phrase.t + (i * phrase.dur / phrase.notes.length);
-      const duration = phrase.dur / phrase.notes.length + 0.1;
+  // If it hasn't started playing in 8 seconds, fallback
+  const timeoutId = setTimeout(() => {
+    if (!fellBack && (audio.readyState < 2 || audio.currentTime === 0)){
+      fallback();
+    }
+  }, 8000);
 
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, start);
-      osc.frequency.linearRampToValueAtTime(freq * 1.02, start + duration * 0.5);
-      osc.frequency.linearRampToValueAtTime(freq * 0.98, start + duration);
+  audio.addEventListener('canplaythrough', () => {
+    clearTimeout(timeoutId);
+  }, { once: true });
 
-      // Vocal-like vibrato
-      const lfo = ctx.createOscillator();
-      lfo.frequency.setValueAtTime(5.5, start);
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.setValueAtTime(4, start);
-      lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
-      lfo.start(start); lfo.stop(start + duration);
-
-      // Harmonic overtone for richer voice
-      const harm = ctx.createOscillator();
-      harm.type = 'sine';
-      harm.frequency.setValueAtTime(freq * 2, start);
-      const harmGain = ctx.createGain();
-      harmGain.gain.setValueAtTime(0.15, start);
-
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.28, start + 0.08);
-      gain.gain.setValueAtTime(0.28, start + duration * 0.6);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-
-      osc.connect(gain);
-      harm.connect(harmGain); harmGain.connect(gain);
-      gain.connect(master); gain.connect(delay);
-
-      osc.start(start); osc.stop(start + duration + 0.05);
-      harm.start(start); harm.stop(start + duration + 0.05);
-    });
-  });
-
-  // Subtle low drone (like distant masjid ambiance)
-  const drone = ctx.createOscillator();
-  const droneGain = ctx.createGain();
-  drone.type = 'sine';
-  drone.frequency.setValueAtTime(110, now);
-  droneGain.gain.setValueAtTime(0.0001, now);
-  droneGain.gain.exponentialRampToValueAtTime(0.05, now + 0.5);
-  droneGain.gain.exponentialRampToValueAtTime(0.0001, now + 4.2);
-  drone.connect(droneGain); droneGain.connect(master);
-  drone.start(now); drone.stop(now + 4.5);
+  audio.src = url;
+  currentAudioEl = audio;
+  const p = audio.play();
+  if (p && p.catch) p.catch(fallback);
+  return audio;
 }
 
-/* Full melody: extended traditional tone (~9s) */
-function playFullAdhan(){
+function stopAllAdhanAudio(){
+  if (currentAudioEl){
+    try { currentAudioEl.pause(); currentAudioEl.currentTime = 0; } catch(e){}
+    currentAudioEl = null;
+  }
+}
+
+/* Synth tone — offline-safe fallback */
+function playSynthTone(){
   const ctx = ensureAudioCtx();
   if (!ctx) return;
   const now = ctx.currentTime;
@@ -2492,10 +2534,16 @@ function playFullAdhan(){
   drone.start(now); drone.stop(now + 9);
 }
 
+/* Main play dispatcher */
 function playAdhan(mode){
-  if (mode === 'short') playShortAdhan();
-  else if (mode === 'full') playFullAdhan();
-  // 'silent' → no sound
+  if (mode === 'silent') return;
+  if (mode === 'synth') { playSynthTone(); return; }
+  if (mode === 'short') {
+    playMp3(getShortAdhanUrl(), playSynthTone);
+    return;
+  }
+  // default 'full'
+  playMp3(getFullAdhanUrl(), playSynthTone);
 }
 
 function showAdhanBanner(prayerLabel){
@@ -2533,7 +2581,6 @@ function fireAdhan(prayerKey, prayerTime){
   showAdhanBanner(label);
   sendSystemNotification(label);
 
-  // Vibration — always (even in silent mode)
   if (navigator.vibrate) {
     try { navigator.vibrate([220, 90, 220, 90, 320]); } catch(e){}
   }
@@ -3068,7 +3115,12 @@ function renderAdhanOptions(){
       state.adhanMode = mode;
       saveState();
       renderAdhanOptions();
-      const labels = { short: 'Short Adhan', full: 'Full Melody', silent: 'Silent' };
+      const labels = {
+        full: 'Full Adhan',
+        short: 'Short Adhan',
+        synth: 'Synth Tone',
+        silent: 'Silent'
+      };
       showToast('Adhan: ' + labels[mode], 'success');
     };
   });
@@ -3116,6 +3168,32 @@ function renderNotifToggles(){
 }
 
 /* =========================================================
+   Custom URL inputs
+   ========================================================= */
+function setupCustomUrlInputs(){
+  const $fullUrl = $('fullAdhanUrl');
+  const $shortUrl = $('shortAdhanUrl');
+  if ($fullUrl){
+    $fullUrl.value = state.fullAdhanUrl || '';
+    $fullUrl.placeholder = DEFAULT_FULL_ADHAN_URL;
+    $fullUrl.addEventListener('change', () => {
+      state.fullAdhanUrl = $fullUrl.value.trim();
+      saveState();
+      showToast('Full Adhan URL saved', 'success');
+    });
+  }
+  if ($shortUrl){
+    $shortUrl.value = state.shortAdhanUrl || '';
+    $shortUrl.placeholder = DEFAULT_SHORT_ADHAN_URL;
+    $shortUrl.addEventListener('change', () => {
+      state.shortAdhanUrl = $shortUrl.value.trim();
+      saveState();
+      showToast('Short Adhan URL saved', 'success');
+    });
+  }
+}
+
+/* =========================================================
    iOS detection for banner
    ========================================================= */
 function isIOS(){
@@ -3130,7 +3208,6 @@ function isStandalone(){
 function showIOSBannerIfNeeded(){
   const banner = $('iosBanner');
   if (!banner) return;
-  // Show only on iOS devices, when NOT already installed, and if user hasn't dismissed
   const dismissed = localStorage.getItem('nur_ios_banner_dismissed') === '1';
   if (isIOS() && !isStandalone() && !dismissed){
     banner.classList.add('show');
@@ -3190,16 +3267,47 @@ let swRegistration = null;
 function registerServiceWorker(){
   if (!('serviceWorker' in navigator)) return;
   const swCode = `
-    const CACHE = 'nur-prayer-v9';
+    const CACHE = 'nur-prayer-v10';
+    const ADHAN_CACHE = 'nur-adhan-v1';
     const ASSETS = ['./'];
+    const ADHAN_URLS = [
+      'https://raed31818-debug.github.io/Prayers-time/Full_Athan_Clean_Echo.mp3',
+      'https://raed31818-debug.github.io/Prayers-time/Athan_Clean_Echo.mp3'
+    ];
     self.addEventListener('install', e => {
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{})).then(()=>self.skipWaiting()));
+      e.waitUntil(
+        caches.open(CACHE).then(c => c.addAll(ASSETS).catch(()=>{}))
+        .then(() => caches.open(ADHAN_CACHE).then(c => {
+          return Promise.all(ADHAN_URLS.map(u =>
+            fetch(u).then(r => { if (r.ok) return c.put(u, r.clone()); }).catch(()=>{})
+          ));
+        }))
+        .then(()=>self.skipWaiting())
+      );
     });
     self.addEventListener('activate', e => {
-      e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(()=>self.clients.claim()));
+      e.waitUntil(
+        caches.keys().then(keys => Promise.all(
+          keys.filter(k => k !== CACHE && k !== ADHAN_CACHE).map(k => caches.delete(k))
+        )).then(()=>self.clients.claim())
+      );
     });
     self.addEventListener('fetch', e => {
       if (e.request.method !== 'GET') return;
+      const url = e.request.url;
+      // Cache-first for Adhan MP3s
+      if (url.endsWith('.mp3')) {
+        e.respondWith(
+          caches.open(ADHAN_CACHE).then(c =>
+            c.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
+              if (resp.ok) c.put(e.request, resp.clone()).catch(()=>{});
+              return resp;
+            }))
+          ).catch(() => fetch(e.request))
+        );
+        return;
+      }
+      // Default network-first-ish with cache fallback
       e.respondWith(
         caches.match(e.request).then(cached => {
           if (cached) return cached;
@@ -3246,7 +3354,6 @@ window.addEventListener('appinstalled', () => {
    ========================================================= */
 function updateNotifBanner(){
   if (!('Notification' in window)) { $notifBanner.classList.remove('show'); return; }
-  // On iOS, only show banner if installed as PWA
   if (isIOS() && !isStandalone()){
     $notifBanner.classList.remove('show');
     return;
@@ -3343,23 +3450,51 @@ function init(){
         showToast('Silent mode — no sound to test');
         return;
       }
+      const labelMap = {
+        full: 'Full Adhan',
+        short: 'Short Adhan',
+        synth: 'Synth Tone'
+      };
+      $adhanTestBtn.disabled = true;
+      const origText = $adhanTestBtn.textContent;
+      $adhanTestBtn.textContent = '⏵ Playing…';
+      showToast('Playing ' + (labelMap[state.adhanMode] || 'Adhan') + '…');
       playAdhan(state.adhanMode);
-      showToast('Playing ' + (state.adhanMode === 'short' ? 'short Adhan' : 'full melody') + '…');
+      setTimeout(() => {
+        $adhanTestBtn.disabled = false;
+        $adhanTestBtn.textContent = origText;
+      }, 4000);
     });
   }
+
+  // Stop button for playing Adhan
+  const $stopBtn = document.createElement('button');
+  $stopBtn.className = 'adhan-test-btn';
+  $stopBtn.textContent = '■ Stop Playback';
+  $stopBtn.style.marginTop = '6px';
+  $stopBtn.addEventListener('click', () => {
+    stopAllAdhanAudio();
+    showToast('Stopped');
+  });
+  const testBtnParent = $('adhanTestBtn') && $('adhanTestBtn').parentNode;
+  if (testBtnParent) testBtnParent.appendChild($stopBtn);
 
   // Reset button
   const $resetAllBtn = $('resetAllBtn');
   if ($resetAllBtn){
     $resetAllBtn.addEventListener('click', () => {
       if (!confirm('Reset all settings?')) return;
-      try { localStorage.removeItem('nur_state_v2'); localStorage.removeItem('nur_ios_banner_dismissed'); } catch(e){}
+      try {
+        localStorage.removeItem('nur_state_v3');
+        localStorage.removeItem('nur_ios_banner_dismissed');
+      } catch(e){}
       location.reload();
     });
   }
 
   renderAdhanOptions();
   renderNotifToggles();
+  setupCustomUrlInputs();
 
   updateNotifBanner();
   showIOSBannerIfNeeded();
